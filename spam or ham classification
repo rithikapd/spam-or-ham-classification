@@ -1,0 +1,88 @@
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+
+df = pd.read_csv(r"C:\Users\divya\Downloads\spam (2).csv")
+df.head()
+
+X = df.iloc[:, 1:2]
+y = df.iloc[:, 0:1]
+
+fig, ax = plt.subplots(figsize=(7, 5))
+sns.countplot(x="v1", data=df)
+   
+for p in ax.patches:
+    percentage = '{:.1f}%'.format(100 * p.get_height()/len(X))
+    x_countplot = p.get_x() + p.get_width()/2
+    y_countplot = p.get_height()+ 50
+    ax.annotate(percentage, (x_countplot, y_countplot), ha='center')
+plt.show()
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X.values.ravel(), 
+    y.values.ravel(), 
+    test_size=0.20, 
+    random_state=42)
+
+count_vectorizer = CountVectorizer()
+tfidf_vectorizer = TfidfVectorizer()
+
+clf_method = KNeighborsClassifier()
+
+clf_count_vectorizer = Pipeline([
+     ('vectorizer', count_vectorizer),
+     ('classifier', clf_method)
+ ])
+
+clf_count_vectorizer.fit(X_train, y_train)
+
+clf_tfidf_vectorizer = Pipeline([
+     ('vectorizer', tfidf_vectorizer),
+     ('classifier', clf_method)
+ ])
+
+clf_tfidf_vectorizer.fit(X_train, y_train)
+
+from sklearn.metrics import accuracy_score
+
+y_train_pred_cvect = clf_tfidf_vectorizer.predict(X_train)
+
+y_train_pred_tfidf_vect = clf_tfidf_vectorizer.predict(X_train)
+
+print(f"Train Accuracy using Count Vectorizer: {accuracy_score(y_train, y_train_pred_cvect):.3f}")
+print(f"Train Accuracy using TF-IDF Vectorizer: {accuracy_score(y_train, y_train_pred_tfidf_vect):.3f}")
+
+print(classification_report(y_train, y_train_pred_cvect))
+
+print(classification_report(y_train, y_train_pred_tfidf_vect))
+
+from sklearn.metrics import accuracy_score
+
+y_test_pred_cvect = clf_count_vectorizer.predict(X_test)
+
+y_test_pred_tfidf_vect = clf_tfidf_vectorizer.predict(X_test)
+
+print(f"Test Accuracy using Count Vectorizer: {accuracy_score(y_test, y_test_pred_cvect):.3f}")
+print(f"Test Accuracy using TF-IDF Vectorizer: {accuracy_score(y_test, y_test_pred_tfidf_vect):.3f}")
+
+print(classification_report(y_test, y_test_pred_cvect))
+
+print(classification_report(y_test, y_test_pred_tfidf_vect))
+
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
+conf_mat_test = confusion_matrix(y_test, y_test_pred_cvect)
+
+disp = ConfusionMatrixDisplay(confusion_matrix=conf_mat_test, display_labels=clf_tfidf_vectorizer.classes_)
+disp.plot(cmap='Blues', values_format='d')
+plt.title("Confusion Matrix - Testing Set")
+plt.show()
+
